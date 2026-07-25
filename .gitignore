@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Modèles téléchargés / cache Hugging Face
+.cache/
+*.pt
+*.bin
+
+# Audio de test volumineux (garder seulement les 3 fichiers de démo)
+*.wav
+*.mp3
+!test_audio/*.wav
+!test_audio/*.mp3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
