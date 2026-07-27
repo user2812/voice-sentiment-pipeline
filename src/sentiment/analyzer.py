@@ -18,6 +18,12 @@ STAR_TO_CLASS = {
     "5 stars": "positif",
 }
 
+# Le modèle est entraîné sur des avis (opinions fortes). Sur un texte purement
+# informatif, sans opinion exprimée, le score gagnant reste souvent proche de
+# 0.5 (le modèle hésite). Sous ce seuil, on force la classe "neutre" plutôt
+# que de garder une prédiction positif/négatif peu fiable.
+CONFIDENCE_THRESHOLD_FOR_NEUTRAL = 0.6
+
 
 class SentimentAnalyzer:
     def __init__(self, model_name: str = MODEL_NAME, device: int = -1):
@@ -47,7 +53,15 @@ class SentimentAnalyzer:
             aggregated[final_class] += item["score"]
 
         best_class = max(aggregated, key=aggregated.get)
-        return {"sentiment": best_class, "confidence": round(aggregated[best_class], 4)}
+        best_score = aggregated[best_class]
+
+        # Si le modèle hésite (score gagnant trop faible) et que ce n'est pas
+        # déjà "neutre", on considère qu'aucune opinion claire ne se dégage.
+        if best_class != "neutre" and best_score < CONFIDENCE_THRESHOLD_FOR_NEUTRAL:
+            # Confiance dans le "neutre" = à quel point le modèle était loin de trancher
+            return {"sentiment": "neutre", "confidence": round(1 - best_score, 4)}
+
+        return {"sentiment": best_class, "confidence": round(best_score, 4)}
 
 
 if __name__ == "__main__":
