@@ -90,7 +90,7 @@ Exemple d'appel :
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/predict" \
-  -F "file=@test_audio/exemple_positif.wav"
+  -F "file=@test_audio/exemple_positif.mp3"
 ```
 
 Réponse JSON attendue :
