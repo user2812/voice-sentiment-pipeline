@@ -55,7 +55,6 @@ demo = gr.Interface(
         ["test_audio/exemple_negatif.mp3"],
         ["test_audio/exemple_neutre.mp3"],
     ],
-    allow_flagging="never",
 )
 
 
