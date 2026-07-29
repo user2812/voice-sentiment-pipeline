@@ -25,6 +25,39 @@ STAR_TO_CLASS = {
 CONFIDENCE_THRESHOLD_FOR_NEUTRAL = 0.6
 
 
+def aggregate_scores(raw_scores):
+    """
+    Agrège les scores des 5 classes du modèle (1 star, ..., 5 stars) en 3 classes
+    finales (positif/négatif/neutre), en sommant les scores de chaque groupe.
+
+    raw_scores : liste de dicts au format [{"label": "1 star", "score": 0.1}, ...]
+    Retourne : {"positif": float, "négatif": float, "neutre": float}
+    """
+    aggregated = {"positif": 0.0, "négatif": 0.0, "neutre": 0.0}
+    for item in raw_scores:
+        final_class = STAR_TO_CLASS[item["label"]]
+        aggregated[final_class] += item["score"]
+    return aggregated
+
+
+def decide_sentiment(aggregated, threshold=CONFIDENCE_THRESHOLD_FOR_NEUTRAL):
+    """
+    Prend les scores agrégés (positif/négatif/neutre) et applique le seuil de
+    confiance : si la classe gagnante est positif ou négatif mais avec un score
+    trop faible (< threshold), on bascule sur "neutre".
+
+    Retourne : {"sentiment": str, "confidence": float}
+    """
+    best_class = max(aggregated, key=aggregated.get)
+    best_score = aggregated[best_class]
+
+    if best_class != "neutre" and best_score < threshold:
+        # Confiance dans le "neutre" = à quel point le modèle était loin de trancher
+        return {"sentiment": "neutre", "confidence": round(1 - best_score, 4)}
+
+    return {"sentiment": best_class, "confidence": round(best_score, 4)}
+
+
 class SentimentAnalyzer:
     def __init__(self, model_name: str = MODEL_NAME, device: int = -1):
         # device=-1 -> CPU, device=0 -> premier GPU (utile sur Colab)
@@ -39,29 +72,13 @@ class SentimentAnalyzer:
     def predict(self, text: str) -> dict:
         """
         Retourne {"sentiment": "positif|négatif|neutre", "confidence": float}
-        La confiance est la somme des scores des étoiles regroupées dans la classe gagnante.
         """
         if not text or not text.strip():
             return {"sentiment": "neutre", "confidence": 0.0}
 
-        scores = self.pipe(text, top_k=None)  # renvoie les scores pour les 5 classes
-
-        # Agréger les scores par classe finale (positif/négatif/neutre)
-        aggregated = {"positif": 0.0, "négatif": 0.0, "neutre": 0.0}
-        for item in scores:
-            final_class = STAR_TO_CLASS[item["label"]]
-            aggregated[final_class] += item["score"]
-
-        best_class = max(aggregated, key=aggregated.get)
-        best_score = aggregated[best_class]
-
-        # Si le modèle hésite (score gagnant trop faible) et que ce n'est pas
-        # déjà "neutre", on considère qu'aucune opinion claire ne se dégage.
-        if best_class != "neutre" and best_score < CONFIDENCE_THRESHOLD_FOR_NEUTRAL:
-            # Confiance dans le "neutre" = à quel point le modèle était loin de trancher
-            return {"sentiment": "neutre", "confidence": round(1 - best_score, 4)}
-
-        return {"sentiment": best_class, "confidence": round(best_score, 4)}
+        raw_scores = self.pipe(text, top_k=None)  # scores pour les 5 classes
+        aggregated = aggregate_scores(raw_scores)
+        return decide_sentiment(aggregated)
 
 
 if __name__ == "__main__":

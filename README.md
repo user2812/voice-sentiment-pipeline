@@ -1,7 +1,7 @@
 # 🎙️ Détection Automatique de Sentiment dans des Appels Vocaux
 
 **Module :** Deep Learning 2 — DIT (Dakar Institute of Technology)
-**Auteur :** Fatim [Nom]
+**Auteur :** Fatoumata Gassama
 **Encadrant :** Pr. Abdouaziz
 **Date limite :** 31 juillet 2026, 23h59 GMT
 
@@ -73,33 +73,65 @@ pip install -r requirements.txt
 
 ### Interface Gradio
 
+En local :
 ```bash
 python src/ui/app.py
 ```
 
-Ouvre l'interface dans le navigateur, upload un fichier `.wav` ou `.mp3`,
-et affiche la transcription intermédiaire ainsi que le sentiment détecté.
+Sur Google Colab :
+```python
+import sys
+sys.path.append(".")
+from src.ui.app import demo
+
+demo.launch(share=True, debug=True)
+```
+Un lien public temporaire (`https://xxxxx.gradio.live`) s'affiche, valable jusqu'à une semaine.
+
+Ouvre l'interface dans le navigateur, upload un fichier `.wav` ou `.mp3` (ou choisis un des 3
+exemples fournis), et affiche la transcription intermédiaire ainsi que le sentiment détecté.
 
 ### API REST
 
+En local :
 ```bash
 uvicorn src.api.main:app --reload
 ```
 
-Exemple d'appel :
+Sur Google Colab (utilisé pour le développement et les tests, GPU disponible), le serveur est exposé publiquement via un tunnel [ngrok](https://ngrok.com) :
+```python
+import subprocess, time, requests
+from pyngrok import ngrok
+
+ngrok.set_auth_token("VOTRE_TOKEN_NGROK")  # gratuit sur dashboard.ngrok.com
+process = subprocess.Popen(["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"])
+time.sleep(30)
+public_url = ngrok.connect(8000)
+print("API accessible sur :", public_url)
+```
+
+Une documentation interactive (Swagger) est disponible automatiquement sur `/docs`.
+
+Exemple d'appel avec `curl` :
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/predict" \
   -F "file=@test_audio/exemple_positif.mp3"
 ```
 
-Réponse JSON attendue :
+Exemple d'appel avec le script Python fourni (`examples/call_api_example.py`) :
+
+```bash
+python examples/call_api_example.py test_audio/exemple_positif.mp3
+```
+
+Réponse JSON réelle obtenue (testée en conditions réelles via l'API exposée sur Colab) :
 
 ```json
 {
-  "transcription": "Je suis très satisfait du service, merci beaucoup.",
+  "transcription": "bonjour je vous appelle pour vous dire que je suis vraiment très satisfait du service que jai reçu la semaine dernière le technicien a été ponctuel professionnel et le problème a été réglé rapidement merci beaucoup cétait parfait",
   "sentiment": "positif",
-  "confidence": 0.94
+  "confidence": 0.9798
 }
 ```
 
@@ -109,10 +141,12 @@ Réponse JSON attendue :
 
 | Tâche      | Modèle                                                      | Justification                                                                 |
 |------------|--------------------------------------------------------------|--------------------------------------------------------------------------------|
-| ASR        | `jonatasgrosman/wav2vec2-large-xlsr-53-french`               | Fine-tuné spécifiquement pour le français, bonnes performances (WER) publiées sur Hugging Face, facilement utilisable via `transformers`. |
-| Sentiment  | `[à compléter — ex. CamemBERT fine-tuné]`                    | [à compléter — pourquoi ce modèle plutôt qu'un autre]                          |
+| ASR        | [`jonatasgrosman/wav2vec2-large-xlsr-53-french`](https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-french) | Fine-tuné spécifiquement pour le français à partir de XLSR-53, avec de bonnes performances (WER) publiées sur sa fiche Hugging Face. Facilement utilisable via `transformers` (classes `Wav2Vec2ForCTC` / `Wav2Vec2Processor`), sans configuration supplémentaire. |
+| Sentiment  | [`cmarkea/distilcamembert-base-sentiment`](https://huggingface.co/cmarkea/distilcamembert-base-sentiment) | Version distillée de CamemBERT (environ 2x plus rapide, taille réduite), entraînée sur des avis clients (Amazon Reviews, Allociné) avec près de 38k téléchargements sur Hugging Face. Le modèle prédit nativement une note sur 5 étoiles ; nous la mappons vers 3 classes (1-2 étoiles → négatif, 3 → neutre, 4-5 → positif). Un seuil de confiance (0.6) a été ajouté en post-traitement : lorsque le score de la classe gagnante (positif/négatif) reste trop faible — signe d'hésitation du modèle sur un texte sans opinion claire — la prédiction bascule automatiquement vers "neutre". |
 
-Liens Hugging Face : *(à ajouter)*
+Liens Hugging Face :
+- ASR : https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-french
+- Sentiment : https://huggingface.co/cmarkea/distilcamembert-base-sentiment
 
 ---
 
