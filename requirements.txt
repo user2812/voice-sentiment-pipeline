@@ -1,6 +1,7 @@
 torch>=2.0.0
 torchaudio>=2.0.0
 transformers>=4.35.0
+sentencepiece>=0.1.99
 librosa>=0.10.0
 soundfile>=0.12.0
 gradio>=4.0.0
@@ -9,5 +10,5 @@ uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 numpy>=1.24.0
 pydantic>=2.0.0
-pytest>=7.4.0
 requests>=2.31.0
+pytest>=7.4.0
