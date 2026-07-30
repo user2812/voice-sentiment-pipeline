@@ -1,14 +1,5 @@
 # 🎙️ Détection Automatique de Sentiment dans des Appels Vocaux
 
-**Module :** Deep Learning 2 — DIT (Dakar Institute of Technology)
-**Auteur :** Fatoumata Gassama
-**Encadrant :** Pr. Abdouaziz
-**Date limite :** 31 juillet 2026, 23h59 GMT
-
-Pipeline automatisé qui transcrit un appel vocal (ASR) puis analyse le sentiment
-du client (NLP) pour le classer en **Positif**, **Négatif** ou **Neutre**, avec un
-score de confiance.
-
 ---
 
 ## 📐 Architecture
@@ -61,7 +52,7 @@ cd voice-sentiment-pipeline
 
 # 2. Créer un environnement virtuel
 python3 -m venv venv
-source venv/bin/activate   # ou venv\Scripts\activate sous Windows
+source venv/bin/activate
 
 # 3. Installer les dépendances
 pip install -r requirements.txt
@@ -88,8 +79,9 @@ demo.launch(share=True, debug=True)
 ```
 Un lien public temporaire (`https://xxxxx.gradio.live`) s'affiche, valable jusqu'à une semaine.
 
-Ouvre l'interface dans le navigateur, upload un fichier `.wav` ou `.mp3` (ou choisis un des 3
-exemples fournis), et affiche la transcription intermédiaire ainsi que le sentiment détecté.
+Ouvre l'interface dans le navigateur, upload un fichier `.wav` ou `.mp3` et affiche la transcription intermédiaire ainsi que le sentiment détecté.
+
+![Interface Gradio — exemple avec un appel positif](docs/screenshots/gradio_interface.png)
 
 ### API REST
 
@@ -103,7 +95,7 @@ Sur Google Colab (utilisé pour le développement et les tests, GPU disponible),
 import subprocess, time, requests
 from pyngrok import ngrok
 
-ngrok.set_auth_token("VOTRE_TOKEN_NGROK")  # gratuit sur dashboard.ngrok.com
+ngrok.set_auth_token("TOKEN_NGROK")  # gratuit sur dashboard.ngrok.com
 process = subprocess.Popen(["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"])
 time.sleep(30)
 public_url = ngrok.connect(8000)
@@ -170,17 +162,40 @@ dans `docs/demo_results.md`.
 
 ## 📊 Évaluation quantitative (bonus)
 
-*(à compléter si réalisé : WER pour l'ASR, accuracy/F1 pour le sentiment sur un
-petit jeu de données annoté)*
+Le pipeline a été évalué sur les 3 fichiers de test annotés : **WER de 5.05%**
+pour la transcription ASR, et **F1-macro de 100%** pour la classification de
+sentiment. Détails complets et méthodologie dans
+[`docs/evaluation_results.md`](docs/evaluation_results.md).
+
+```bash
+python src/evaluate.py
+```
 
 ---
 
 ## 🐳 Docker (bonus)
 
+Construire l'image (installe les dépendances, copie le code et les fichiers de démo) :
 ```bash
 docker build -t voice-sentiment-pipeline .
+```
+
+Lancer le conteneur (l'API sera accessible sur `http://localhost:8000`) :
+```bash
 docker run -p 8000:8000 voice-sentiment-pipeline
 ```
+
+Tester ensuite comme n'importe quel appel à l'API :
+```bash
+curl -X POST "http://localhost:8000/predict" \
+  -F "file=@test_audio/exemple_positif.mp3"
+```
+
+⚠️ **Note** : les modèles Hugging Face (ASR + sentiment, ~1.5 Go au total) sont
+téléchargés au premier démarrage du conteneur (pas inclus dans l'image pour la
+garder légère), donc le tout premier lancement peut prendre quelques minutes le
+temps du téléchargement. Les lancements suivants sont plus rapides si le cache
+Hugging Face est monté en volume persistant.
 
 ---
 
@@ -190,9 +205,3 @@ docker run -p 8000:8000 voice-sentiment-pipeline
 - La qualité de la transcription dépend fortement du bruit de fond et de la qualité d'enregistrement.
 - Le modèle de sentiment n'a pas été entraîné spécifiquement sur du langage oral transcrit (peut contenir des disfluences, hésitations, etc.).
 - Durée maximale supportée : 5 minutes par fichier.
-
----
-
-## 📄 Licence
-
-Projet académique — Deep Learning 2, DIT, 2026.
