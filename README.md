@@ -77,11 +77,11 @@ from src.ui.app import demo
 
 demo.launch(share=True, debug=True)
 ```
-Un lien public temporaire (`https://xxxxx.gradio.live`) s'affiche, valable jusqu'à une semaine.
+Un lien public temporaire (`https://f978563e9418f4fe03.gradio.live`) s'affiche.
 
 Ouvre l'interface dans le navigateur, upload un fichier `.wav` ou `.mp3` et affiche la transcription intermédiaire ainsi que le sentiment détecté.
 
-![Interface Gradio — exemple avec un appel positif](docs/screenshots/gradio_interface.png)
+![Interface Gradio — exemple avec un appel positif](docs/gradio_interface.png)
 
 ### API REST
 
